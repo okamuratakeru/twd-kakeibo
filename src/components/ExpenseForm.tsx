@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Save } from "lucide-react";
 import { Button } from "./ui/button";
@@ -26,11 +26,18 @@ export function ExpenseForm({ onBack, onSave }: ExpenseFormProps) {
     amount: "",
     currency: "TWD",
     category: "",
-    date: new Date().toISOString().split("T")[0],
+    date: "",
     storeName: "",
     memo: "",
   });
   const [continuousMode, setContinuousMode] = useState(false);
+
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      date: new Date().toISOString().split("T")[0]
+    }));
+  }, []);
 
   // Exchange rate (mock - should come from API)
   const exchangeRate = 4.5; // 1 TWD = 4.5 JPY

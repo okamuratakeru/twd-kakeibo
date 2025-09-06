@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ArrowLeft, Camera, Image, Scissors, Save } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -39,11 +39,18 @@ export function ReceiptForm({ onBack, onSave }: ReceiptFormProps) {
   const [formData, setFormData] = useState({
     amount: "",
     currency: "TWD",
-    date: new Date().toISOString().split("T")[0],
+    date: "",
     storeName: "",
     category: "",
     memo: "",
   });
+
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      date: new Date().toISOString().split("T")[0]
+    }));
+  }, []);
   const [saveImageWithTransaction, setSaveImageWithTransaction] =
     useState(true);
 

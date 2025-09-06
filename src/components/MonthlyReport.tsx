@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
 interface MonthlyReportProps {
   month: string; // Format: "2025-08"
@@ -18,11 +19,6 @@ const categoryData = [
   { name: "光熱費", value: 8000, color: "var(--chart-4)" },
   { name: "その他", value: 10000, color: "var(--chart-5)" }
 ];
-
-const dailyData = Array.from({ length: 31 }, (_, i) => ({
-  day: String(i + 1).padStart(2, '0'),
-  amount: Math.floor(Math.random() * 8000) + 1000
-}));
 
 const topStores = [
   { name: "セブンイレブン", transactions: 15, amount: 12500 },
@@ -46,6 +42,16 @@ const formatCurrency = (amount: number, currency: 'JPY' | 'TWD') => {
 
 export function MonthlyReport({ month }: MonthlyReportProps) {
   const router = useRouter();
+  const [dailyData, setDailyData] = useState<Array<{day: string, amount: number}>>([]);
+  
+  useEffect(() => {
+    const data = Array.from({ length: 31 }, (_, i) => ({
+      day: String(i + 1).padStart(2, '0'),
+      amount: Math.floor(Math.random() * 8000) + 1000
+    }));
+    setDailyData(data);
+  }, []);
+
   const totalJPY = categoryData.reduce((sum, item) => sum + item.value, 0);
   const totalTWD = Math.floor(totalJPY * 0.23); // Mock TWD conversion
 
