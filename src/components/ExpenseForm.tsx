@@ -15,10 +15,15 @@ import {
 } from "./ui/select";
 import { Textarea } from "./ui/textarea";
 import { Switch } from "./ui/switch";
+import {
+  expenseApi,
+  CreateExpenseDTO,
+  ExpenseApiError,
+} from "@/lib/api/expenses";
 
 interface ExpenseFormProps {
   onBack: () => void;
-  onSave: (expense: any) => void;
+  onSave?: (expense: any) => void;
 }
 
 export function ExpenseForm({ onBack, onSave }: ExpenseFormProps) {
@@ -31,11 +36,13 @@ export function ExpenseForm({ onBack, onSave }: ExpenseFormProps) {
     memo: "",
   });
   const [continuousMode, setContinuousMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      date: new Date().toISOString().split("T")[0]
+      date: new Date().toISOString().split("T")[0],
     }));
   }, []);
 
@@ -57,33 +64,49 @@ export function ExpenseForm({ onBack, onSave }: ExpenseFormProps) {
     }
   };
 
-  const handleSave = (shouldContinue: boolean) => {
+  const handleSave = async (shouldContinue: boolean) => {
     if (!formData.amount || !formData.category) {
-      alert("金額とカテゴリは必須です");
+      setError("金額とカテゴリは必須です");
       return;
     }
 
-    const expense = {
-      ...formData,
-      amount: parseFloat(formData.amount),
-      convertedAmount: getConvertedAmount(),
-      id: Date.now().toString(),
-    };
+    setIsLoading(true);
+    setError(null);
 
-    onSave(expense);
-
-    if (shouldContinue || continuousMode) {
-      // 連続入力用リセットフォーム
-      setFormData({
-        amount: "",
+    try {
+      const expenseData: CreateExpenseDTO = {
+        amount: parseFloat(formData.amount),
         currency: formData.currency,
         category: formData.category,
-        date: new Date().toISOString().split("T")[0],
-        storeName: "",
-        memo: "",
-      });
-    } else {
-      onBack();
+        date: formData.date || new Date().toISOString().split("T")[0],
+        storeName: formData.storeName || undefined,
+        memo: formData.memo || undefined,
+      };
+
+      await expenseApi.createExpense(expenseData);
+
+      if (shouldContinue || continuousMode) {
+        // 連続入力用リセットフォーム
+        setFormData({
+          amount: "",
+          currency: formData.currency,
+          category: formData.category,
+          date: new Date().toISOString().split("T")[0],
+          storeName: "",
+          memo: "",
+        });
+      } else {
+        onBack();
+      }
+    } catch (error) {
+      console.error("Failed to create expense:", error);
+      if (error instanceof ExpenseApiError) {
+        setError(`エラー: ${error.message}`);
+      } else {
+        setError("支出の保存に失敗しました。もう一度お試しください。");
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -116,17 +139,24 @@ export function ExpenseForm({ onBack, onSave }: ExpenseFormProps) {
         <button
           onClick={() => handleSave(false)}
           className="p-2 rounded-lg hover:bg-accent transition-colors"
-          disabled={!formData.amount || !formData.category}
+          disabled={!formData.amount || !formData.category || isLoading}
         >
           <Save
             className={`w-5 h-5 ${
-              !formData.amount || !formData.category
+              !formData.amount || !formData.category || isLoading
                 ? "text-muted-foreground"
                 : "text-primary"
             }`}
           />
         </button>
       </header>
+
+      {/* Error Message */}
+      {error && (
+        <div className="mx-4 mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      )}
 
       {/* Form */}
       <div className="px-4 py-6 pb-32 space-y-6">
@@ -258,17 +288,17 @@ export function ExpenseForm({ onBack, onSave }: ExpenseFormProps) {
           <Button
             className="flex-1"
             onClick={() => handleSave(true)}
-            disabled={!formData.amount || !formData.category}
+            disabled={!formData.amount || !formData.category || isLoading}
           >
-            保存して次を追加
+            {isLoading ? "保存中..." : "保存して次を追加"}
           </Button>
           <Button
             variant="outline"
             className="flex-1"
             onClick={() => handleSave(false)}
-            disabled={!formData.amount || !formData.category}
+            disabled={!formData.amount || !formData.category || isLoading}
           >
-            保存して閉じる
+            {isLoading ? "保存中..." : "保存して閉じる"}
           </Button>
         </div>
       </div>
